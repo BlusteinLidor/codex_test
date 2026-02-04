@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP Bot - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Admin Dashboard</h1>
+      <p>Approve or reject event requests, then track invite responses.</p>
+    </header>
+    <main>
+      <div class="card">
+        <h2>Pending Events</h2>
+        <div id="events"></div>
+      </div>
+      <div class="card">
+        <h2>Invite Status</h2>
+        <div id="invites"></div>
+      </div>
+    </main>
+    <script>
+      const token = localStorage.getItem("adminToken");
+      const eventsContainer = document.getElementById("events");
+      const invitesContainer = document.getElementById("invites");
+
+      if (!token) {
+        window.location.href = "admin-login.html";
+      }
+
+      const loadInvites = async (eventId) => {
+        const response = await fetch(`/api/admin/events/${eventId}/invites`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        invitesContainer.innerHTML = "";
+        if (!data.invites.length) {
+          invitesContainer.innerHTML = "<p class='small'>No invites yet.</p>";
+          return;
+        }
+        const list = document.createElement("div");
+        list.className = "grid";
+        data.invites.forEach((invite) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <strong>${invite.name}</strong>
+            <p class="small">${invite.phone}</p>
+            <p>Status: <span class="status ${invite.status}">${invite.status}</span></p>
+            <p class="small">Responded: ${invite.respondedAt || "Not yet"}</p>
+          `;
+          list.appendChild(card);
+        });
+        invitesContainer.appendChild(list);
+      };
+
+      const loadEvents = async () => {
+        const response = await fetch("/api/admin/events", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        eventsContainer.innerHTML = "";
+        if (!data.events.length) {
+          eventsContainer.innerHTML = "<p class='small'>No pending events.</p>";
+          return;
+        }
+        data.events.forEach((event) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <h3>${event.title}</h3>
+            <p class="small">Requested by ${event.requester} • ${event.eventDate}</p>
+            <p>${event.notes || "No notes."}</p>
+            <p class="small">Payment: ${event.paid ? "Paid" : "Pending"}</p>
+          `;
+          const approveButton = document.createElement("button");
+          approveButton.textContent = "Approve";
+          approveButton.addEventListener("click", async () => {
+            await fetch(`/api/admin/events/${event.id}/decision`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ decision: "approved" })
+            });
+            loadEvents();
+            loadInvites(event.id);
+          });
+          const rejectButton = document.createElement("button");
+          rejectButton.textContent = "Reject";
+          rejectButton.className = "danger";
+          rejectButton.addEventListener("click", async () => {
+            await fetch(`/api/admin/events/${event.id}/decision`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ decision: "rejected" })
+            });
+            loadEvents();
+          });
+          const viewInvitesButton = document.createElement("button");
+          viewInvitesButton.textContent = "View invites";
+          viewInvitesButton.className = "secondary";
+          viewInvitesButton.addEventListener("click", () => loadInvites(event.id));
+          const actions = document.createElement("div");
+          actions.className = "inline";
+          actions.appendChild(approveButton);
+          actions.appendChild(rejectButton);
+          actions.appendChild(viewInvitesButton);
+          card.appendChild(actions);
+          eventsContainer.appendChild(card);
+        });
+      };
+
+      loadEvents();
+    </script>
+  </body>
+</html>
