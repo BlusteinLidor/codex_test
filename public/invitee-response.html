@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP Bot - Invite Response</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>You're Invited!</h1>
+      <p>Confirm your attendance.</p>
+    </header>
+    <main>
+      <div class="card">
+        <div id="details"></div>
+        <div class="inline" style="margin-top: 16px;">
+          <button data-response="approved">Approve</button>
+          <button data-response="maybe" class="secondary">Maybe</button>
+          <button data-response="rejected" class="danger">Reject</button>
+        </div>
+        <p id="message" class="small"></p>
+      </div>
+    </main>
+    <script>
+      const details = document.getElementById("details");
+      const message = document.getElementById("message");
+      const inviteId = new URLSearchParams(window.location.search).get("id");
+
+      if (!inviteId) {
+        details.textContent = "Invite not found.";
+      } else {
+        fetch(`/api/invites/${inviteId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              details.textContent = data.error;
+              return;
+            }
+            details.innerHTML = `
+              <h2>${data.invite.title}</h2>
+              <p class="small">${data.invite.eventDate}</p>
+              <p>Hello ${data.invite.name}, please RSVP.</p>
+              <p class="small">Current status: ${data.invite.status}</p>
+            `;
+          });
+      }
+
+      document.querySelectorAll("button[data-response]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const response = await fetch(`/api/invites/${inviteId}/respond`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ response: button.dataset.response })
+          });
+          if (response.ok) {
+            message.textContent = "Thanks for your response!";
+          } else {
+            message.textContent = "Unable to record response.";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

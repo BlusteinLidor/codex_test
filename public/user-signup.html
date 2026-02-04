@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP Bot - Sign Up</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>RSVP WhatsApp Bot</h1>
+      <p>Create your event request account.</p>
+    </header>
+    <main>
+      <div class="card">
+        <form id="signup-form">
+          <div class="grid">
+            <div>
+              <label for="name">Name</label>
+              <input id="name" required />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" type="email" required />
+            </div>
+            <div>
+              <label for="password">Password</label>
+              <input id="password" type="password" required />
+            </div>
+          </div>
+          <div class="inline" style="margin-top: 16px;">
+            <button type="submit">Create account</button>
+            <a href="user-login.html" class="secondary" style="align-self:center;">Log in</a>
+          </div>
+        </form>
+        <p id="message" class="small"></p>
+      </div>
+    </main>
+    <script>
+      const form = document.getElementById("signup-form");
+      const message = document.getElementById("message");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        const payload = {
+          name: document.getElementById("name").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          password: document.getElementById("password").value
+        };
+        const response = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          message.textContent = "Account created! Please log in.";
+          form.reset();
+        } else {
+          const data = await response.json();
+          message.textContent = data.error || "Signup failed.";
+        }
+      });
+    </script>
+  </body>
+</html>

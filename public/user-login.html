@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP Bot - User Login</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>RSVP WhatsApp Bot</h1>
+      <p>Log in to manage your event requests.</p>
+    </header>
+    <main>
+      <div class="card">
+        <form id="login-form">
+          <div class="grid">
+            <div>
+              <label for="email">Email</label>
+              <input id="email" type="email" required />
+            </div>
+            <div>
+              <label for="password">Password</label>
+              <input id="password" type="password" required />
+            </div>
+          </div>
+          <div class="inline" style="margin-top: 16px;">
+            <button type="submit">Log in</button>
+            <a href="user-signup.html" class="secondary" style="align-self:center;">Sign up</a>
+          </div>
+        </form>
+        <p id="message" class="small"></p>
+      </div>
+    </main>
+    <script>
+      const form = document.getElementById("login-form");
+      const message = document.getElementById("message");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        const payload = {
+          email: document.getElementById("email").value.trim(),
+          password: document.getElementById("password").value,
+          role: "user"
+        };
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem("userToken", data.token);
+          window.location.href = "user-dashboard.html";
+        } else {
+          const data = await response.json();
+          message.textContent = data.error || "Login failed.";
+        }
+      });
+    </script>
+  </body>
+</html>
